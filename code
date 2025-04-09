@@ -1,193 +1,201 @@
-print("hacks luanched!")
 local Players = game:GetService("Players")
-local UserInputService = game:GetService("UserInputService")
-local RunService = game:GetService("RunService")
+local UIS = game:GetService("UserInputService")
+local TS = game:GetService("TweenService")
+local RS = game:GetService("RunService")
 
 local player = Players.LocalPlayer
-
--- Create GUI container
-local gui = Instance.new("ScreenGui")
-gui.Name = "BottomLeftGUI"
+local gui = Instance.new("ScreenGui", player.PlayerGui)
+gui.Name = "WorkingGUI"
 gui.ResetOnSpawn = false
-gui.ZIndexBehavior = Enum.ZIndexBehavior.Global
-gui.Parent = player:WaitForChild("PlayerGui")
 
--- Main frame positioned in bottom-left
-local mainFrame = Instance.new("Frame")
-mainFrame.Size = UDim2.new(0, 300, 0, 250)  -- Increased height for new buttons
-mainFrame.Position = UDim2.new(0, 10, 1, -260) -- Adjusted bottom position
-mainFrame.AnchorPoint = Vector2.new(0, 1)
-mainFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
-mainFrame.BorderSizePixel = 0
+-- Main Container
+local frame = Instance.new("Frame", gui)
+frame.Size = UDim2.new(0, 220, 0, 200)
+frame.Position = UDim2.new(0, 10, 1, -210)
+frame.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
+frame.ClipsDescendants = true
+frame.Visible = true
 
--- Add visual styling
-local uiCorner = Instance.new("UICorner")
-uiCorner.CornerRadius = UDim.new(0, 8)
-uiCorner.Parent = mainFrame
+-- Minimize Button
+local minimizeBtn = Instance.new("TextButton", frame)
+minimizeBtn.Size = UDim2.new(0, 30, 0, 20)
+minimizeBtn.Position = UDim2.new(1, -35, 0, 5)
+minimizeBtn.Text = "[ - ]"
+minimizeBtn.BackgroundColor3 = Color3.fromRGB(80, 80, 90)
+minimizeBtn.TextColor3 = Color3.new(1,1,1)
 
-local uiStroke = Instance.new("UIStroke")
-uiStroke.Color = Color3.fromRGB(80, 80, 100)
-uiStroke.Thickness = 2
-uiStroke.Parent = mainFrame
-
--- Drag handle at top
-local dragHandle = Instance.new("TextLabel")
-dragHandle.Size = UDim2.new(1, 0, 0, 25)
+-- Drag Handle
+local dragHandle = Instance.new("TextLabel", frame)
+dragHandle.Size = UDim2.new(1, -40, 0, 25)
+dragHandle.Position = UDim2.new(0, 5, 0, 0)
 dragHandle.Text = "Drag Here"
-dragHandle.TextColor3 = Color3.new(1, 1, 1)
-dragHandle.BackgroundColor3 = Color3.fromRGB(50, 50, 70)
-dragHandle.Parent = mainFrame
+dragHandle.BackgroundTransparency = 1
+dragHandle.TextColor3 = Color3.new(1,1,1)
 
--- Dragging functionality
+-- Create Buttons with Functionality
+local buttons = {
+    {name = "Speed", y = 0.2, color = Color3.fromRGB(0, 150, 200)},
+    {name = "Jump", y = 0.35, color = Color3.fromRGB(200, 100, 0)},
+    {name = "Flight", y = 0.5, color = Color3.fromRGB(150, 0, 200)},
+    {name = "Sword", y = 0.65, color = Color3.fromRGB(200, 50, 50)}
+}
+
+local activeStates = {
+    Speed = false,
+    Jump = false,
+    Flight = false,
+    Sword = false
+}
+
+-- Create buttons and connect functionality
+for _, btnData in pairs(buttons) do
+    local btn = Instance.new("TextButton", frame)
+    btn.Size = UDim2.new(0.9, 0, 0, 30)
+    btn.Position = UDim2.new(0.05, 0, btnData.y, 0)
+    btn.BackgroundColor3 = btnData.color
+    btn.TextColor3 = Color3.new(1,1,1)
+    btn.Text = btnData.name..": OFF"
+    
+    btn.MouseButton1Click:Connect(function()
+        activeStates[btnData.name] = not activeStates[btnData.name]
+        btn.Text = btnData.name..": "..(activeStates[btnData.name] and "ON" or "OFF")
+        updateCharacter(btnData.name, activeStates[btnData.name])
+    end)
+end
+
+-- Character Update System
+function updateCharacter(feature, state)
+    local character = player.Character
+    if not character then return end
+    
+    local humanoid = character:FindFirstChild("Humanoid")
+    local root = character:FindFirstChild("HumanoidRootPart")
+    
+    if feature == "Speed" and humanoid then
+        humanoid.WalkSpeed = state and 32 or 16
+    elseif feature == "Jump" and humanoid then
+        humanoid.JumpPower = state and 100 or 50
+    elseif feature == "Flight" and root then
+        if state then
+            -- Enable flight
+            local bodyVelocity = Instance.new("BodyVelocity", root)
+            local bodyGyro = Instance.new("BodyGyro", root)
+            bodyVelocity.MaxForce = Vector3.new(4000, 4000, 4000)
+            bodyGyro.MaxTorque = Vector3.new(4000, 4000, 4000)
+            
+            RS.Heartbeat:Connect(function()
+                if activeStates.Flight and root then
+                    local cam = workspace.CurrentCamera.CFrame
+                    local moveVec = Vector3.new(
+                        UIS:IsKeyDown(Enum.KeyCode.D) and 1 or UIS:IsKeyDown(Enum.KeyCode.A) and -1 or 0,
+                        UIS:IsKeyDown(Enum.KeyCode.Space) and 1 or UIS:IsKeyDown(Enum.KeyCode.LeftShift) and -1 or 0,
+                        UIS:IsKeyDown(Enum.KeyCode.W) and -1 or UIS:IsKeyDown(Enum.KeyCode.S) and 1 or 0
+                    )
+                    root.Velocity = cam:VectorToWorldSpace(moveVec) * 50
+                    bodyGyro.CFrame = cam
+                end
+            end)
+        else
+            -- Disable flight
+            for _, obj in pairs(root:GetChildren()) do
+                if obj:IsA("BodyVelocity") or obj:IsA("BodyGyro") then
+                    obj:Destroy()
+                end
+            end
+        end
+    elseif feature == "Sword" then
+        if state then
+            -- Create sword
+            local sword = Instance.new("Part", character)
+            sword.Name = "PlayerSword"
+            sword.Size = Vector3.new(0.5, 4, 0.5)
+            sword.Color = Color3.new(1, 0, 0)
+            sword.Material = Enum.Material.Neon
+            
+            -- Attach to hand
+            local rightArm = character:WaitForChild("RightUpperArm")
+            local weld = Instance.new("Weld", sword)
+            weld.Part0 = rightArm
+            weld.Part1 = sword
+            weld.C0 = CFrame.new(0, -2, 0) * CFrame.Angles(math.rad(90), 0, 0)
+            
+            -- Damage system
+            sword.Touched:Connect(function(hit)
+                local hitHumanoid = hit.Parent:FindFirstChild("Humanoid")
+                if hitHumanoid and hitHumanoid ~= humanoid then
+                    hitHumanoid:TakeDamage(25)
+                end
+            end)
+        else
+            -- Remove sword
+            for _, obj in pairs(character:GetChildren()) do
+                if obj.Name == "PlayerSword" then
+                    obj:Destroy()
+                end
+            end
+        end
+    end
+end
+
+-- Minimize System
+local minimized = false
+minimizeBtn.MouseButton1Click:Connect(function()
+    minimized = not minimized
+    local tween = TS:Create(frame, TweenInfo.new(0.3), {
+        Size = minimized and UDim2.new(0, 220, 0, 30) or UDim2.new(0, 220, 0, 200),
+        Position = minimized and UDim2.new(0, frame.Position.X.Offset, 1, -40) or UDim2.new(0, frame.Position.X.Offset, 1, -210)
+    })
+    tween:Play()
+    minimizeBtn.Text = minimized and "[ + ]" or "[ - ]"
+    
+    -- Toggle button visibility
+    for _, btn in pairs(frame:GetChildren()) do
+        if btn:IsA("TextButton") and btn ~= minimizeBtn then
+            btn.Visible = not minimized
+        end
+    end
+end)
+
+-- Dragging System
 local dragging = false
-local dragStart
-local startPos
+local dragStart, frameStart
 
 dragHandle.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 then
         dragging = true
         dragStart = input.Position
-        startPos = mainFrame.Position
+        frameStart = frame.Position
     end
 end)
 
-UserInputService.InputChanged:Connect(function(input)
+UIS.InputChanged:Connect(function(input)
     if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
         local delta = input.Position - dragStart
-        mainFrame.Position = UDim2.new(
-            startPos.X.Scale,
-            startPos.X.Offset + delta.X,
-            startPos.Y.Scale,
-            startPos.Y.Offset + delta.Y
-        )
+        local newX = frameStart.X.Offset + delta.X
+        local newY = frameStart.Y.Offset + delta.Y
+        
+        -- Keep within screen bounds
+        newX = math.clamp(newX, 0, gui.AbsoluteSize.X - frame.AbsoluteSize.X)
+        newY = math.clamp(newY, 0, gui.AbsoluteSize.Y - frame.AbsoluteSize.Y)
+        
+        frame.Position = UDim2.new(0, newX, 0, newY)
     end
 end)
 
-dragHandle.InputEnded:Connect(function(input)
+UIS.InputEnded:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 then
         dragging = false
     end
 end)
 
--- Movement modifiers
-local speedActive = false
-local jumpActive = false
-local originalSpeed = 16
-local originalJump = 50
-
--- Speed button
-local speedButton = Instance.new("TextButton")
-speedButton.Size = UDim2.new(0.9, 0, 0, 40)
-speedButton.Position = UDim2.new(0.05, 0, 0.2, 0)
-speedButton.Text = "2x Speed: OFF"
-speedButton.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
-speedButton.TextColor3 = Color3.new(1, 1, 1)
-speedButton.Parent = mainFrame
-
--- Jump button
-local jumpButton = Instance.new("TextButton")
-jumpButton.Size = UDim2.new(0.9, 0, 0, 40)
-jumpButton.Position = UDim2.new(0.05, 0, 0.4, 0)
-jumpButton.Text = "2x Jump: OFF"
-jumpButton.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
-jumpButton.TextColor3 = Color3.new(1, 1, 1)
-jumpButton.Parent = mainFrame
-
-local function updateMovement()
-    local character = player.Character
-    if character then
-        local humanoid = character:FindFirstChild("Humanoid")
-        if humanoid then
-            humanoid.WalkSpeed = speedActive and originalSpeed * 2 or originalSpeed
-            humanoid.JumpPower = jumpActive and originalJump * 2 or originalJump
-        end
-    end
-end
-
-speedButton.MouseButton1Click:Connect(function()
-    speedActive = not speedActive
-    speedButton.Text = "2x Speed: " .. (speedActive and "ON" or "OFF")
-    updateMovement()
-end)
-
-jumpButton.MouseButton1Click:Connect(function()
-    jumpActive = not jumpActive
-    jumpButton.Text = "2x Jump: " .. (jumpActive and "ON" or "OFF")
-    updateMovement()
-end)
-
--- Flight system
-local flying = false
-local flyConnection
-
-local flightButton = Instance.new("TextButton")
-flightButton.Size = UDim2.new(0.9, 0, 0, 40)
-flightButton.Position = UDim2.new(0.05, 0, 0.6, 0)
-flightButton.Text = "Toggle Flight: OFF"
-flightButton.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
-flightButton.TextColor3 = Color3.new(1, 1, 1)
-flightButton.Parent = mainFrame
-
-local function toggleFlight()
-    if not player.Character then return end
-    
-    flying = not flying
-    local root = player.Character:FindFirstChild("HumanoidRootPart")
-    local humanoid = player.Character:FindFirstChild("Humanoid")
-    
-    if flying then
-        humanoid:ChangeState(Enum.HumanoidStateType.Physics)
-        flightButton.Text = "Toggle Flight: ON"
-        flyConnection = RunService.Heartbeat:Connect(function()
-            if not root or not flying then return end
-            
-            local camera = workspace.CurrentCamera
-            local moveVector = camera.CFrame:VectorToWorldSpace(
-                Vector3.new(
-                    UserInputService:IsKeyDown(Enum.KeyCode.D) and 1 or UserInputService:IsKeyDown(Enum.KeyCode.A) and -1 or 0,
-                    UserInputService:IsKeyDown(Enum.KeyCode.Space) and 1 or UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) and -1 or 0,
-                    UserInputService:IsKeyDown(Enum.KeyCode.W) and -1 or UserInputService:IsKeyDown(Enum.KeyCode.S) and 1 or 0
-                )
-            )
-            
-            root.Velocity = moveVector * 100
-        end)
-    else
-        if flyConnection then
-            flyConnection:Disconnect()
-            flyConnection = nil
-        end
-        humanoid:ChangeState(Enum.HumanoidStateType.GettingUp)
-        root.Velocity = Vector3.new()
-        flightButton.Text = "Toggle Flight: OFF"
-    end
-end
-
-flightButton.MouseButton1Click:Connect(toggleFlight)
-
--- Handle character changes
+-- Character Handling
 player.CharacterAdded:Connect(function(character)
-    local humanoid = character:WaitForChild("Humanoid")
-    originalSpeed = humanoid.WalkSpeed
-    originalJump = humanoid.JumpPower
-    
-    -- Re-apply boosts if active
-    if speedActive or jumpActive then
-        updateMovement()
-    end
-    
-    -- Reset flight state
-    if flying then
-        toggleFlight()
+    character:WaitForChild("Humanoid")
+    for feature, state in pairs(activeStates) do
+        if state then
+            updateCharacter(feature, true)
+        end
     end
 end)
 
--- Final parenting
-mainFrame.Parent = gui
-
--- Visual confirmation
-game:GetService("StarterGui"):SetCore("SendNotification", {
-    Title = "Welocme! Welcome!",
-    Text = "Movement controls in bottom-left! and lucky you... this was made by a youtuber! @SkillSpawnPlayz also! give nay ideas in the vid of this script! (give ideas for free!)",
-    Duration = 5
-})
+print("FULLY FUNCTIONAL GUI LOADED! TEST ALL BUTTONS!")
