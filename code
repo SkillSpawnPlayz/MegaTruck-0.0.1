@@ -188,6 +188,6 @@ mainFrame.Parent = gui
 -- Visual confirmation
 game:GetService("StarterGui"):SetCore("SendNotification", {
     Title = "Welocme! Welcome!",
-    Text = "Movement controls in bottom-left! and lucky you... this was made by a youtuber! @SkillSpawnPlayz",
+    Text = "Movement controls in bottom-left! and lucky you... this was made by a youtuber! @SkillSpawnPlayz also! give nay ideas in the vid of this script! (give ideas for free!)",
     Duration = 5
 })
