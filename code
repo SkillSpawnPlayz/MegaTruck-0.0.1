@@ -1,7 +1,4 @@
-print("HACKS ARE IN POSE!")
-print("you may start using them... NOW!)
-
-  local Players = game:GetService("Players")
+local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 
