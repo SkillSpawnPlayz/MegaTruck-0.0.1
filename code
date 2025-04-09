@@ -1,0 +1,195 @@
+print("HACKS ARE IN POSE!")
+print("you may start using them... NOW!)
+
+  local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+
+local player = Players.LocalPlayer
+
+-- Create GUI container
+local gui = Instance.new("ScreenGui")
+gui.Name = "BottomLeftGUI"
+gui.ResetOnSpawn = false
+gui.ZIndexBehavior = Enum.ZIndexBehavior.Global
+gui.Parent = player:WaitForChild("PlayerGui")
+
+-- Main frame positioned in bottom-left
+local mainFrame = Instance.new("Frame")
+mainFrame.Size = UDim2.new(0, 300, 0, 250)  -- Increased height for new buttons
+mainFrame.Position = UDim2.new(0, 10, 1, -260) -- Adjusted bottom position
+mainFrame.AnchorPoint = Vector2.new(0, 1)
+mainFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
+mainFrame.BorderSizePixel = 0
+
+-- Add visual styling
+local uiCorner = Instance.new("UICorner")
+uiCorner.CornerRadius = UDim.new(0, 8)
+uiCorner.Parent = mainFrame
+
+local uiStroke = Instance.new("UIStroke")
+uiStroke.Color = Color3.fromRGB(80, 80, 100)
+uiStroke.Thickness = 2
+uiStroke.Parent = mainFrame
+
+-- Drag handle at top
+local dragHandle = Instance.new("TextLabel")
+dragHandle.Size = UDim2.new(1, 0, 0, 25)
+dragHandle.Text = "Drag Here"
+dragHandle.TextColor3 = Color3.new(1, 1, 1)
+dragHandle.BackgroundColor3 = Color3.fromRGB(50, 50, 70)
+dragHandle.Parent = mainFrame
+
+-- Dragging functionality
+local dragging = false
+local dragStart
+local startPos
+
+dragHandle.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = true
+        dragStart = input.Position
+        startPos = mainFrame.Position
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+        local delta = input.Position - dragStart
+        mainFrame.Position = UDim2.new(
+            startPos.X.Scale,
+            startPos.X.Offset + delta.X,
+            startPos.Y.Scale,
+            startPos.Y.Offset + delta.Y
+        )
+    end
+end)
+
+dragHandle.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = false
+    end
+end)
+
+-- Movement modifiers
+local speedActive = false
+local jumpActive = false
+local originalSpeed = 16
+local originalJump = 50
+
+-- Speed button
+local speedButton = Instance.new("TextButton")
+speedButton.Size = UDim2.new(0.9, 0, 0, 40)
+speedButton.Position = UDim2.new(0.05, 0, 0.2, 0)
+speedButton.Text = "2x Speed: OFF"
+speedButton.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
+speedButton.TextColor3 = Color3.new(1, 1, 1)
+speedButton.Parent = mainFrame
+
+-- Jump button
+local jumpButton = Instance.new("TextButton")
+jumpButton.Size = UDim2.new(0.9, 0, 0, 40)
+jumpButton.Position = UDim2.new(0.05, 0, 0.4, 0)
+jumpButton.Text = "2x Jump: OFF"
+jumpButton.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
+jumpButton.TextColor3 = Color3.new(1, 1, 1)
+jumpButton.Parent = mainFrame
+
+local function updateMovement()
+    local character = player.Character
+    if character then
+        local humanoid = character:FindFirstChild("Humanoid")
+        if humanoid then
+            humanoid.WalkSpeed = speedActive and originalSpeed * 2 or originalSpeed
+            humanoid.JumpPower = jumpActive and originalJump * 2 or originalJump
+        end
+    end
+end
+
+speedButton.MouseButton1Click:Connect(function()
+    speedActive = not speedActive
+    speedButton.Text = "2x Speed: " .. (speedActive and "ON" or "OFF")
+    updateMovement()
+end)
+
+jumpButton.MouseButton1Click:Connect(function()
+    jumpActive = not jumpActive
+    jumpButton.Text = "2x Jump: " .. (jumpActive and "ON" or "OFF")
+    updateMovement()
+end)
+
+-- Flight system
+local flying = false
+local flyConnection
+
+local flightButton = Instance.new("TextButton")
+flightButton.Size = UDim2.new(0.9, 0, 0, 40)
+flightButton.Position = UDim2.new(0.05, 0, 0.6, 0)
+flightButton.Text = "Toggle Flight: OFF"
+flightButton.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
+flightButton.TextColor3 = Color3.new(1, 1, 1)
+flightButton.Parent = mainFrame
+
+local function toggleFlight()
+    if not player.Character then return end
+    
+    flying = not flying
+    local root = player.Character:FindFirstChild("HumanoidRootPart")
+    local humanoid = player.Character:FindFirstChild("Humanoid")
+    
+    if flying then
+        humanoid:ChangeState(Enum.HumanoidStateType.Physics)
+        flightButton.Text = "Toggle Flight: ON"
+        flyConnection = RunService.Heartbeat:Connect(function()
+            if not root or not flying then return end
+            
+            local camera = workspace.CurrentCamera
+            local moveVector = camera.CFrame:VectorToWorldSpace(
+                Vector3.new(
+                    UserInputService:IsKeyDown(Enum.KeyCode.D) and 1 or UserInputService:IsKeyDown(Enum.KeyCode.A) and -1 or 0,
+                    UserInputService:IsKeyDown(Enum.KeyCode.Space) and 1 or UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) and -1 or 0,
+                    UserInputService:IsKeyDown(Enum.KeyCode.W) and -1 or UserInputService:IsKeyDown(Enum.KeyCode.S) and 1 or 0
+                )
+            )
+            
+            root.Velocity = moveVector * 100
+        end)
+    else
+        if flyConnection then
+            flyConnection:Disconnect()
+            flyConnection = nil
+        end
+        humanoid:ChangeState(Enum.HumanoidStateType.GettingUp)
+        root.Velocity = Vector3.new()
+        flightButton.Text = "Toggle Flight: OFF"
+    end
+end
+
+flightButton.MouseButton1Click:Connect(toggleFlight)
+
+-- Handle character changes
+player.CharacterAdded:Connect(function(character)
+    local humanoid = character:WaitForChild("Humanoid")
+    originalSpeed = humanoid.WalkSpeed
+    originalJump = humanoid.JumpPower
+    
+    -- Re-apply boosts if active
+    if speedActive or jumpActive then
+        updateMovement()
+    end
+    
+    -- Reset flight state
+    if flying then
+        toggleFlight()
+    end
+end)
+
+-- Final parenting
+mainFrame.Parent = gui
+
+-- Visual confirmation
+game:GetService("StarterGui"):SetCore("SendNotification", {
+    Title = "GUI Loaded",
+    Text = "Movement controls in bottom-left!",
+    Duration = 5
+})
