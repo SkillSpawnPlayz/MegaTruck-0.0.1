@@ -1,25 +1,73 @@
------ COMPLETE SYSTEM (LocalScript in StarterPlayerScripts) -----
+----- COMPLETE LOCALSCRIPT (StarterPlayerScripts) -----
 local Players = game:GetService("Players")
 local UIS = game:GetService("UserInputService")
 local RS = game:GetService("RunService")
 local TS = game:GetService("TweenService")
 
--- CONFIGURATION --
-local OorN = false
-local MAINTENANCE_DATE = "21/4/2025"
+-- ========== CONFIGURATION ========== --
+local VALID_KEYS = {
+    "9075328-JHjhgGGkgGUY",
+    "827945jkhs-nchs425-9283u",
+    "238947hjbfds-ahudbgf732",
+    "bzvlhjvbd-uy89473",
+    "29487-ahgbadf", 
+    "783465@^2@94#",
+    "#*&^*%^%#-HG*(&tiyc 3568"
+}
 local player = Players.LocalPlayer
+local keyValidated = false
 
--- MAINTENANCE CHECK --
-if not OorN then
-    game:GetService("StarterGui"):SetCore("SendNotification", {
-        Title = "⚠️ UPDATE IN PROGRESS ⚠️",
-        Text = "Please wait until: "..MAINTENANCE_DATE,
-        Duration = 10
-    })
-    return
-end
+-- ========== KEY SYSTEM ========== --
+local keyGui = Instance.new("ScreenGui", player.PlayerGui)
+keyGui.Name = "KeySystem"
+keyGui.ResetOnSpawn = false
 
--- CORE SYSTEMS --
+local keyFrame = Instance.new("Frame", keyGui)
+keyFrame.Size = UDim2.new(0, 400, 0, 200)
+keyFrame.Position = UDim2.new(0.5, -200, 0.5, -100)
+keyFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
+keyFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+Instance.new("UICorner", keyFrame).CornerRadius = UDim.new(0, 12)
+
+local keyInput = Instance.new("TextBox", keyFrame)
+keyInput.Size = UDim2.new(0.8, 0, 0.4, 0)
+keyInput.Position = UDim2.new(0.1, 0, 0.1, 0)
+keyInput.PlaceholderText = "Enter activation key..."
+keyInput.Text = ""
+keyInput.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
+keyInput.TextColor3 = Color3.new(1,1,1)
+Instance.new("UICorner", keyInput).CornerRadius = UDim.new(0, 8)
+
+local submitBtn = Instance.new("TextButton", keyFrame)
+submitBtn.Size = UDim2.new(0.6, 0, 0.4, 0)
+submitBtn.Position = UDim2.new(0.2, 0, 0.55, 0)
+submitBtn.Text = "INITIALIZE SYSTEM"
+submitBtn.Font = Enum.Font.GothamBold
+submitBtn.BackgroundColor3 = Color3.fromRGB(0, 90, 180)
+submitBtn.TextColor3 = Color3.new(1,1,1)
+Instance.new("UICorner", submitBtn).CornerRadius = UDim.new(0, 8)
+
+-- Key validation
+submitBtn.MouseButton1Click:Connect(function()
+    for _, validKey in pairs(VALID_KEYS) do
+        if keyInput.Text == validKey then
+            keyValidated = true
+            keyGui.Enabled = false
+            game:GetService("StarterGui"):SetCore("SendNotification", {
+                Title = "ACCESS GRANTED",
+                Text = "System unlocked! Press RightShift",
+                Duration = 3
+            })
+            return
+        end
+    end
+    keyInput.Text = ""
+    keyInput.PlaceholderText = "Invalid key! Try again..."
+    task.wait(1)
+    keyInput.PlaceholderText = "Enter activation key..."
+end)
+
+-- ========== MAIN GUI ========== --
 local gui = Instance.new("ScreenGui", player.PlayerGui)
 gui.ResetOnSpawn = false
 gui.Enabled = false
@@ -33,19 +81,51 @@ mainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
 mainFrame.BackgroundTransparency = 1
 Instance.new("UICorner", mainFrame).CornerRadius = UDim.new(0, 20)
 
--- TITLE WITH DRAG --
+-- Draggable title
 local title = Instance.new("TextLabel", mainFrame)
 title.Size = UDim2.new(1, 0, 0, 60)
 title.Text = "Made by -SkillSpawnPlayz"
 title.Font = Enum.Font.SciFi
 title.TextColor3 = Color3.new(0, 0.75, 1)
-title.TextStrokeColor3 = Color3.new(0, 0, 0)
-title.TextStrokeTransparency = 0.3
 title.TextSize = 32
 title.BackgroundTransparency = 1
 title.Active = true
 
--- ABILITY ROWS (KEPT) --
+-- Drag system
+local dragging = false
+local dragStart, frameStart
+
+title.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = true
+        dragStart = input.Position
+        frameStart = mainFrame.Position
+        
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                dragging = false
+            end
+        end)
+    end
+end)
+
+UIS.InputChanged:Connect(function(input)
+    if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+        local delta = input.Position - dragStart
+        mainFrame.Position = UDim2.new(
+            frameStart.X.Scale, 
+            frameStart.X.Offset + delta.X,
+            frameStart.Y.Scale, 
+            frameStart.Y.Offset + delta.Y
+        )
+    end
+end)
+
+-- ========== ABILITY SYSTEMS ========== --
+local active = {Jump = false, Speed = false, Flight = false}
+local values = {Jump = 50, Speed = 16, Flight = 50}
+
+-- Ability row template
 local function CreateRow(yPos, label)
     local container = Instance.new("Frame", mainFrame)
     container.Size = UDim2.new(1, -40, 0, 60)
@@ -78,17 +158,16 @@ local function CreateRow(yPos, label)
     return txt, toggle
 end
 
+-- Create ability rows
 local jumpTxt, jumpToggle = CreateRow(0.15, "Jump Height:")
 local speedTxt, speedToggle = CreateRow(0.35, "Run Speed:")
 local flightTxt, flightToggle = CreateRow(0.55, "Flight Power:")
 
--- INPUT HANDLING (KEPT) --
-local active = {Jump = false, Speed = false, Flight = false}
-local values = {Jump = 50, Speed = 16, Flight = 50}
-
+-- Input handling
 local function HandleInput(txtBox, valueName)
     txtBox.FocusLost:Connect(function()
-        values[valueName] = tonumber(txtBox.Text) or values[valueName]
+        local num = tonumber(txtBox.Text)
+        values[valueName] = num or values[valueName]
         txtBox.Text = tostring(values[valueName])
     end)
 end
@@ -97,7 +176,7 @@ HandleInput(jumpTxt, "Jump")
 HandleInput(speedTxt, "Speed")
 HandleInput(flightTxt, "Flight")
 
--- TOGGLE SYSTEM (KEPT) --
+-- Toggle system
 local function ToggleSystem(btn, stateName)
     btn.MouseButton1Click:Connect(function()
         active[stateName] = not active[stateName]
@@ -112,7 +191,7 @@ ToggleSystem(jumpToggle, "Jump")
 ToggleSystem(speedToggle, "Speed")
 ToggleSystem(flightToggle, "Flight")
 
--- FLIGHT SYSTEM (KEPT) --
+-- Flight system
 local flightVelocity, flightGyro
 RS.Heartbeat:Connect(function()
     local chr = player.Character
@@ -148,7 +227,7 @@ RS.Heartbeat:Connect(function()
     end
 end)
 
--- TELEPORT SYSTEM (KEPT) --
+-- Teleport system
 local tpBox = Instance.new("TextBox", mainFrame)
 tpBox.Size = UDim2.new(0.6, 0, 0, 30)
 tpBox.Position = UDim2.new(0.05, 0, 0.8, 0)
@@ -172,37 +251,7 @@ tpBtn.MouseButton1Click:Connect(function()
     end
 end)
 
--- DRAG SYSTEM (KEPT) --
-local dragging = false
-local dragStart, frameStart
-
-title.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then
-        dragging = true
-        dragStart = input.Position
-        frameStart = mainFrame.Position
-        
-        input.Changed:Connect(function()
-            if input.UserInputState == Enum.UserInputState.End then
-                dragging = false
-            end
-        end)
-    end
-end)
-
-UIS.InputChanged:Connect(function(input)
-    if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
-        local delta = input.Position - dragStart
-        mainFrame.Position = UDim2.new(
-            frameStart.X.Scale, 
-            frameStart.X.Offset + delta.X,
-            frameStart.Y.Scale, 
-            frameStart.Y.Offset + delta.Y
-        )
-    end
-end)
-
--- ANIMATIONS (KEPT) --
+-- ========== ANIMATIONS ========== --
 local function WoahOpen()
     mainFrame.Visible = true
     TS:Create(mainFrame, TweenInfo.new(0.8, Enum.EasingStyle.Elastic), {
@@ -220,9 +269,9 @@ local function BouncyClose()
     mainFrame.Visible = false
 end
 
--- TOGGLE VISIBILITY (KEPT) --
+-- ========== FINAL TOGGLE ========== --
 UIS.InputBegan:Connect(function(input)
-    if input.KeyCode == Enum.KeyCode.RightShift then
+    if input.KeyCode == Enum.KeyCode.RightShift and keyValidated then
         gui.Enabled = not gui.Enabled
         if gui.Enabled then
             WoahOpen()
@@ -232,4 +281,4 @@ UIS.InputBegan:Connect(function(input)
     end
 end)
 
-print("FULL SYSTEM ACTIVE - PRESS RIGHT SHIFT!")
+print("right shift to toggle gui")
