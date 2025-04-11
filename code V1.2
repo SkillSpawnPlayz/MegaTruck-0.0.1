@@ -16,6 +16,33 @@ local VALID_KEYS = {
 }
 local player = Players.LocalPlayer
 local keyValidated = false
+local OorN = false
+
+-- ========== UPDATE MESSAGE ========== --
+if not OorN then
+    local updateGui = Instance.new("ScreenGui", player.PlayerGui)
+    updateGui.Name = "UpdateMessage"
+    updateGui.ResetOnSpawn = false
+
+    local frame = Instance.new("Frame", updateGui)
+    frame.Size = UDim2.new(0, 400, 0, 200)
+    frame.Position = UDim2.new(0.5, -200, 0.5, -100)
+    frame.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
+    frame.AnchorPoint = Vector2.new(0.5, 0.5)
+    Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 12)
+
+    local label = Instance.new("TextLabel", frame)
+    label.Size = UDim2.new(0.8, 0, 0.8, 0)
+    label.Position = UDim2.new(0.1, 0, 0.1, 0)
+    label.Text = "Sorry but update in progress\nplease wait till 21/4/2025"
+    label.TextColor3 = Color3.new(1, 1, 1)
+    label.BackgroundTransparency = 1
+    label.TextWrapped = true
+    label.Font = Enum.Font.GothamBold
+    label.TextSize = 20
+
+    return -- Stop script execution here
+end
 
 -- ========== KEY SYSTEM ========== --
 local keyGui = Instance.new("ScreenGui", player.PlayerGui)
@@ -281,4 +308,4 @@ UIS.InputBegan:Connect(function(input)
     end
 end)
 
-print("right shift to toggle gui")
+print("COMPLETE SYSTEM LOADED - AWAITING KEY INPUT")
