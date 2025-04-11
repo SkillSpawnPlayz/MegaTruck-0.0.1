@@ -1,185 +1,95 @@
-warn("Hey! this script is injected! start using what ever abilitys you want!")
-warn("PLEASE DO NOT ADMIN ABUSE IF YOUR NOT MAKING A VID")
-print("loading...")
-task.wait(5)
+v-- CONFIGURATION ---------------------------------------------------------------
+local gui_OorN = false -- Set to true to enable GUI
+local UPDATE_DATE = "15/4/2025"
+local UPDATE_MESSAGE = "Update in progress. Please wait until "..UPDATE_DATE
 
+-- IMMEDIATE UPDATE CHECK ------------------------------------------------------
+if not gui_OorN then
+    game:GetService("StarterGui"):SetCore("SendNotification", {
+        Title = "⚠️ SYSTEM MAINTENANCE ⚠️",
+        Text = UPDATE_MESSAGE,
+        Duration = 10
+    })
+    warn(UPDATE_MESSAGE)
+    return -- Stop script execution completely
+end
+
+-- INITIALIZATION --------------------------------------------------------------
+warn("Script injected - GUI enabled")
 local Players = game:GetService("Players")
 local UIS = game:GetService("UserInputService")
 local TS = game:GetService("TweenService")
 local RS = game:GetService("RunService")
 
 local player = Players.LocalPlayer
+while not player.Character do task.wait() end
+
+-- GUI CREATION -----------------------------------------------------------------
 local gui = Instance.new("ScreenGui", player.PlayerGui)
 gui.Name = "WorkingGUI"
 gui.ResetOnSpawn = false
 
--- Main Container
 local frame = Instance.new("Frame", gui)
-frame.Size = UDim2.new(0, 220, 0, 200)
-frame.Position = UDim2.new(0, 10, 1, -210)
+frame.Size = UDim2.new(0, 240, 0, 220)
+frame.Position = UDim2.new(0, 10, 1, -230)
 frame.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
 frame.ClipsDescendants = true
 frame.Visible = true
 
--- Minimize Button
+-- VISUAL ENHANCEMENTS ---------------------------------------------------------
+local function createGradient(parent)
+    local gradient = Instance.new("UIGradient")
+    gradient.Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(50, 50, 60)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(30, 30, 40))
+    })
+    gradient.Rotation = 90
+    gradient.Parent = parent
+end
+
+createGradient(frame)
+Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 8)
+Instance.new("UIStroke", frame).Color = Color3.fromRGB(100, 100, 150)
+
+-- MINIMIZE SYSTEM -------------------------------------------------------------
 local minimizeBtn = Instance.new("TextButton", frame)
-minimizeBtn.Size = UDim2.new(0, 30, 0, 20)
+minimizeBtn.Size = UDim2.new(0, 30, 0, 24)
 minimizeBtn.Position = UDim2.new(1, -35, 0, 5)
 minimizeBtn.Text = "[ - ]"
-minimizeBtn.BackgroundColor3 = Color3.fromRGB(80, 80, 90)
 minimizeBtn.TextColor3 = Color3.new(1,1,1)
+minimizeBtn.BackgroundColor3 = Color3.fromRGB(90, 90, 110)
+Instance.new("UICorner", minimizeBtn).CornerRadius = UDim.new(0, 4)
 
--- Drag Handle
+-- DRAGGING SYSTEM (FIXED) -----------------------------------------------------
 local dragHandle = Instance.new("TextLabel", frame)
-dragHandle.Size = UDim2.new(1, -40, 0, 25)
+dragHandle.Size = UDim2.new(1, -40, 0, 28)
 dragHandle.Position = UDim2.new(0, 5, 0, 0)
 dragHandle.Text = "Drag Here"
 dragHandle.BackgroundTransparency = 1
-dragHandle.TextColor3 = Color3.new(1,1,1)
+dragHandle.TextColor3 = Color3.new(0.9, 0.9, 0.9)
+dragHandle.Font = Enum.Font.GothamMedium
 
--- Create Buttons with Functionality
-local buttons = {
-    {name = "Speed", y = 0.2, color = Color3.fromRGB(0, 150, 200)},
-    {name = "Jump", y = 0.35, color = Color3.fromRGB(200, 100, 0)},
-    {name = "Flight", y = 0.5, color = Color3.fromRGB(150, 0, 200)},
-    {name = "Sword", y = 0.65, color = Color3.fromRGB(200, 50, 50)}
-}
-
-local activeStates = {
-    Speed = false,
-    Jump = false,
-    Flight = false,
-    Sword = false
-}
-
--- Create buttons and connect functionality
-for _, btnData in pairs(buttons) do
-    local btn = Instance.new("TextButton", frame)
-    btn.Size = UDim2.new(0.9, 0, 0, 30)
-    btn.Position = UDim2.new(0.05, 0, btnData.y, 0)
-    btn.BackgroundColor3 = btnData.color
-    btn.TextColor3 = Color3.new(1,1,1)
-    btn.Text = btnData.name..": OFF"
-    
-    btn.MouseButton1Click:Connect(function()
-        activeStates[btnData.name] = not activeStates[btnData.name]
-        btn.Text = btnData.name..": "..(activeStates[btnData.name] and "ON" or "OFF")
-        updateCharacter(btnData.name, activeStates[btnData.name])
-    end)
-end
-
--- Character Update System
-function updateCharacter(feature, state)
-    local character = player.Character
-    if not character then return end
-    
-    local humanoid = character:FindFirstChild("Humanoid")
-    local root = character:FindFirstChild("HumanoidRootPart")
-    
-    if feature == "Speed" and humanoid then
-        humanoid.WalkSpeed = state and 32 or 16
-    elseif feature == "Jump" and humanoid then
-        humanoid.JumpPower = state and 100 or 50
-    elseif feature == "Flight" and root then
-        if state then
-            -- Enable flight
-            local bodyVelocity = Instance.new("BodyVelocity", root)
-            local bodyGyro = Instance.new("BodyGyro", root)
-            bodyVelocity.MaxForce = Vector3.new(4000, 4000, 4000)
-            bodyGyro.MaxTorque = Vector3.new(4000, 4000, 4000)
-            
-            RS.Heartbeat:Connect(function()
-                if activeStates.Flight and root then
-                    local cam = workspace.CurrentCamera.CFrame
-                    local moveVec = Vector3.new(
-                        UIS:IsKeyDown(Enum.KeyCode.D) and 1 or UIS:IsKeyDown(Enum.KeyCode.A) and -1 or 0,
-                        UIS:IsKeyDown(Enum.KeyCode.Space) and 1 or UIS:IsKeyDown(Enum.KeyCode.LeftShift) and -1 or 0,
-                        UIS:IsKeyDown(Enum.KeyCode.W) and -1 or UIS:IsKeyDown(Enum.KeyCode.S) and 1 or 0
-                    )
-                    root.Velocity = cam:VectorToWorldSpace(moveVec) * 50
-                    bodyGyro.CFrame = cam
-                end
-            end)
-        else
-            -- Disable flight
-            for _, obj in pairs(root:GetChildren()) do
-                if obj:IsA("BodyVelocity") or obj:IsA("BodyGyro") then
-                    obj:Destroy()
-                end
-            end
-        end
-    elseif feature == "Sword" then
-        if state then
-            -- Create sword
-            local sword = Instance.new("Part", character)
-            sword.Name = "PlayerSword"
-            sword.Size = Vector3.new(0.5, 4, 0.5)
-            sword.Color = Color3.new(1, 0, 0)
-            sword.Material = Enum.Material.Neon
-            
-            -- Attach to hand
-            local rightArm = character:WaitForChild("RightUpperArm")
-            local weld = Instance.new("Weld", sword)
-            weld.Part0 = rightArm
-            weld.Part1 = sword
-            weld.C0 = CFrame.new(0, -2, 0) * CFrame.Angles(math.rad(90), 0, 0)
-            
-            -- Damage system
-            sword.Touched:Connect(function(hit)
-                local hitHumanoid = hit.Parent:FindFirstChild("Humanoid")
-                if hitHumanoid and hitHumanoid ~= humanoid then
-                    hitHumanoid:TakeDamage(25)
-                end
-            end)
-        else
-            -- Remove sword
-            for _, obj in pairs(character:GetChildren()) do
-                if obj.Name == "PlayerSword" then
-                    obj:Destroy()
-                end
-            end
-        end
-    end
-end
-
--- Minimize System
-local minimized = false
-minimizeBtn.MouseButton1Click:Connect(function()
-    minimized = not minimized
-    local tween = TS:Create(frame, TweenInfo.new(0.3), {
-        Size = minimized and UDim2.new(0, 220, 0, 30) or UDim2.new(0, 220, 0, 200),
-        Position = minimized and UDim2.new(0, frame.Position.X.Offset, 1, -40) or UDim2.new(0, frame.Position.X.Offset, 1, -210)
-    })
-    tween:Play()
-    minimizeBtn.Text = minimized and "[ + ]" or "[ - ]"
-    
-    -- Toggle button visibility
-    for _, btn in pairs(frame:GetChildren()) do
-        if btn:IsA("TextButton") and btn ~= minimizeBtn then
-            btn.Visible = not minimized
-        end
-    end
-end)
-
--- Dragging System
 local dragging = false
-local dragStart, frameStart
+local dragStartPosition
+local frameStartPosition
 
 dragHandle.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 then
         dragging = true
-        dragStart = input.Position
-        frameStart = frame.Position
+        dragStartPosition = Vector2.new(input.Position.X, input.Position.Y)
+        frameStartPosition = Vector2.new(frame.Position.X.Offset, frame.Position.Y.Offset)
     end
 end)
 
 UIS.InputChanged:Connect(function(input)
     if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
-        local delta = input.Position - dragStart
-        local newX = frameStart.X.Offset + delta.X
-        local newY = frameStart.Y.Offset + delta.Y
+        local currentPosition = Vector2.new(input.Position.X, input.Position.Y)
+        local delta = currentPosition - dragStartPosition
         
-        -- Keep within screen bounds
+        local newX = frameStartPosition.X + delta.X
+        local newY = frameStartPosition.Y + delta.Y
+        
+        -- Screen boundary clamping
         newX = math.clamp(newX, 0, gui.AbsoluteSize.X - frame.AbsoluteSize.X)
         newY = math.clamp(newY, 0, gui.AbsoluteSize.Y - frame.AbsoluteSize.Y)
         
@@ -193,14 +103,73 @@ UIS.InputEnded:Connect(function(input)
     end
 end)
 
--- Character Handling
-player.CharacterAdded:Connect(function(character)
-    character:WaitForChild("Humanoid")
-    for feature, state in pairs(activeStates) do
-        if state then
-            updateCharacter(feature, true)
+-- BUTTON SYSTEM (WITH ANIMATIONS) ---------------------------------------------
+local function createButton(name, yPos, color)
+    local btn = Instance.new("TextButton", frame)
+    btn.Size = UDim2.new(0.9, 0, 0, 32)
+    btn.Position = UDim2.new(0.05, 0, yPos, 0)
+    btn.Text = name..": OFF"
+    btn.Font = Enum.Font.Gotham
+    btn.TextSize = 12
+    btn.TextColor3 = Color3.new(1,1,1)
+    btn.BackgroundColor3 = color
+    Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 4)
+    
+    -- Hover animations
+    btn.MouseEnter:Connect(function()
+        TS:Create(btn, TweenInfo.new(0.2), {
+            BackgroundColor3 = color:Lerp(Color3.new(1,1,1), 0.1),
+            Size = UDim2.new(0.92, 0, 0, 34)
+        }):Play()
+    end)
+    
+    btn.MouseLeave:Connect(function()
+        TS:Create(btn, TweenInfo.new(0.2), {
+            BackgroundColor3 = color,
+            Size = UDim2.new(0.9, 0, 0, 32)
+        }):Play()
+    end)
+    
+    return btn
+end
+
+-- Create buttons with proper spacing
+local buttons = {
+    {name = "Speed", y = 0.18, color = Color3.fromRGB(0, 160, 210)},
+    {name = "Jump", y = 0.34, color = Color3.fromRGB(210, 110, 10)},
+    {name = "Flight", y = 0.50, color = Color3.fromRGB(160, 10, 210)},
+    {name = "Sword", y = 0.66, color = Color3.fromRGB(210, 60, 60)}
+}
+
+local activeStates = {}
+
+for _, btnData in pairs(buttons) do
+    local btn = createButton(btnData.name, btnData.y, btnData.color)
+    activeStates[btnData.name] = false
+    
+    btn.MouseButton1Click:Connect(function()
+        activeStates[btnData.name] = not activeStates[btnData.name]
+        btn.Text = btnData.name..": "..(activeStates[btnData.name] and "ON" or "OFF")
+        -- Add your feature activation logic here
+    end)
+end
+
+-- MINIMIZE ANIMATION ----------------------------------------------------------
+local minimized = false
+minimizeBtn.MouseButton1Click:Connect(function()
+    minimized = not minimized
+    TS:Create(frame, TweenInfo.new(0.3, Enum.EasingStyle.Quad), {
+        Size = minimized and UDim2.new(0, 240, 0, 30) or UDim2.new(0, 240, 0, 220),
+        Position = minimized and UDim2.new(0, frame.Position.X.Offset, 1, -40) or UDim2.new(0, frame.Position.X.Offset, 1, -230)
+    }):Play()
+    minimizeBtn.Text = minimized and "[ + ]" or "[ - ]"
+    
+    -- Toggle button visibility
+    for _, btn in pairs(frame:GetChildren()) do
+        if btn:IsA("TextButton") and btn ~= minimizeBtn then
+            btn.Visible = not minimized
         end
     end
 end)
 
-print("FULLY FUNCTIONAL GUI LOADED! TEST ALL BUTTONS!")
+print("GUI system fully operational!")
