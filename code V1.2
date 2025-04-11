@@ -2,174 +2,92 @@
 local gui_OorN = false -- Set to true to enable GUI
 local UPDATE_DATE = "15/4/2025"
 local UPDATE_MESSAGE = "Update in progress. Please wait until "..UPDATE_DATE
+local NEON_COLOR = Color3.fromRGB(0, 255, 255)
 
 -- IMMEDIATE UPDATE CHECK ------------------------------------------------------
 if not gui_OorN then
     game:GetService("StarterGui"):SetCore("SendNotification", {
-        Title = "⚠️ SYSTEM MAINTENANCE ⚠️",
+        Title = "⚠️ SYSTEM UPDATING ⚠️",
         Text = UPDATE_MESSAGE,
         Duration = 10
     })
     warn(UPDATE_MESSAGE)
-    return -- Stop script execution completely
+    return
 end
 
 -- INITIALIZATION --------------------------------------------------------------
-warn("Script injected - GUI enabled")
 local Players = game:GetService("Players")
 local UIS = game:GetService("UserInputService")
 local TS = game:GetService("TweenService")
 local RS = game:GetService("RunService")
 
 local player = Players.LocalPlayer
-while not player.Character do task.wait() end
+local currentValues = {Jump = 50, Speed = 16, Flight = 50}
+local activeStates = {Jump = false, Speed = false, Flight = false}
 
--- GUI CREATION -----------------------------------------------------------------
+-- FUTURISTIC GUI CREATION -----------------------------------------------------
 local gui = Instance.new("ScreenGui", player.PlayerGui)
-gui.Name = "WorkingGUI"
+gui.Name = "CyberHUD"
 gui.ResetOnSpawn = false
 
-local frame = Instance.new("Frame", gui)
-frame.Size = UDim2.new(0, 240, 0, 220)
-frame.Position = UDim2.new(0, 10, 1, -230)
-frame.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
-frame.ClipsDescendants = true
-frame.Visible = true
+local mainFrame = Instance.new("Frame", gui)
+mainFrame.Size = UDim2.new(0, 320, 0, 280)
+mainFrame.Position = UDim2.new(0, 20, 1, -300)
+mainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
+mainFrame.BackgroundTransparency = 0.2
 
--- VISUAL ENHANCEMENTS ---------------------------------------------------------
-local function createGradient(parent)
-    local gradient = Instance.new("UIGradient")
-    gradient.Color = ColorSequence.new({
-        ColorSequenceKeypoint.new(0, Color3.fromRGB(50, 50, 60)),
-        ColorSequenceKeypoint.new(1, Color3.fromRGB(30, 30, 40))
-    })
-    gradient.Rotation = 90
-    gradient.Parent = parent
-end
+-- [Keep all visual elements from previous futuristic design here] --
 
-createGradient(frame)
-Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 8)
-Instance.new("UIStroke", frame).Color = Color3.fromRGB(100, 100, 150)
+-- MOVEMENT SYSTEM -------------------------------------------------------------
+local flightVelocity, flightGyro
 
--- MINIMIZE SYSTEM -------------------------------------------------------------
-local minimizeBtn = Instance.new("TextButton", frame)
-minimizeBtn.Size = UDim2.new(0, 30, 0, 24)
-minimizeBtn.Position = UDim2.new(1, -35, 0, 5)
-minimizeBtn.Text = "[ - ]"
-minimizeBtn.TextColor3 = Color3.new(1,1,1)
-minimizeBtn.BackgroundColor3 = Color3.fromRGB(90, 90, 110)
-Instance.new("UICorner", minimizeBtn).CornerRadius = UDim.new(0, 4)
-
--- DRAGGING SYSTEM (FIXED) -----------------------------------------------------
-local dragHandle = Instance.new("TextLabel", frame)
-dragHandle.Size = UDim2.new(1, -40, 0, 28)
-dragHandle.Position = UDim2.new(0, 5, 0, 0)
-dragHandle.Text = "Drag Here"
-dragHandle.BackgroundTransparency = 1
-dragHandle.TextColor3 = Color3.new(0.9, 0.9, 0.9)
-dragHandle.Font = Enum.Font.GothamMedium
-
-local dragging = false
-local dragStartPosition
-local frameStartPosition
-
-dragHandle.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then
-        dragging = true
-        dragStartPosition = Vector2.new(input.Position.X, input.Position.Y)
-        frameStartPosition = Vector2.new(frame.Position.X.Offset, frame.Position.Y.Offset)
-    end
-end)
-
-UIS.InputChanged:Connect(function(input)
-    if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
-        local currentPosition = Vector2.new(input.Position.X, input.Position.Y)
-        local delta = currentPosition - dragStartPosition
+RS.Heartbeat:Connect(function()
+    local character = player.Character
+    if not character then return end
+    
+    local humanoid = character:FindFirstChild("Humanoid")
+    local root = character:FindFirstChild("HumanoidRootPart")
+    
+    if humanoid then
+        -- Jump System
+        humanoid.JumpPower = activeStates.Jump and currentValues.Jump or 50
         
-        local newX = frameStartPosition.X + delta.X
-        local newY = frameStartPosition.Y + delta.Y
+        -- Speed System
+        humanoid.WalkSpeed = activeStates.Speed and currentValues.Speed or 16
         
-        -- Screen boundary clamping
-        newX = math.clamp(newX, 0, gui.AbsoluteSize.X - frame.AbsoluteSize.X)
-        newY = math.clamp(newY, 0, gui.AbsoluteSize.Y - frame.AbsoluteSize.Y)
-        
-        frame.Position = UDim2.new(0, newX, 0, newY)
-    end
-end)
-
-UIS.InputEnded:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then
-        dragging = false
-    end
-end)
-
--- BUTTON SYSTEM (WITH ANIMATIONS) ---------------------------------------------
-local function createButton(name, yPos, color)
-    local btn = Instance.new("TextButton", frame)
-    btn.Size = UDim2.new(0.9, 0, 0, 32)
-    btn.Position = UDim2.new(0.05, 0, yPos, 0)
-    btn.Text = name..": OFF"
-    btn.Font = Enum.Font.Gotham
-    btn.TextSize = 12
-    btn.TextColor3 = Color3.new(1,1,1)
-    btn.BackgroundColor3 = color
-    Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 4)
-    
-    -- Hover animations
-    btn.MouseEnter:Connect(function()
-        TS:Create(btn, TweenInfo.new(0.2), {
-            BackgroundColor3 = color:Lerp(Color3.new(1,1,1), 0.1),
-            Size = UDim2.new(0.92, 0, 0, 34)
-        }):Play()
-    end)
-    
-    btn.MouseLeave:Connect(function()
-        TS:Create(btn, TweenInfo.new(0.2), {
-            BackgroundColor3 = color,
-            Size = UDim2.new(0.9, 0, 0, 32)
-        }):Play()
-    end)
-    
-    return btn
-end
-
--- Create buttons with proper spacing
-local buttons = {
-    {name = "Speed", y = 0.18, color = Color3.fromRGB(0, 160, 210)},
-    {name = "Jump", y = 0.34, color = Color3.fromRGB(210, 110, 10)},
-    {name = "Flight", y = 0.50, color = Color3.fromRGB(160, 10, 210)},
-    {name = "Sword", y = 0.66, color = Color3.fromRGB(210, 60, 60)}
-}
-
-local activeStates = {}
-
-for _, btnData in pairs(buttons) do
-    local btn = createButton(btnData.name, btnData.y, btnData.color)
-    activeStates[btnData.name] = false
-    
-    btn.MouseButton1Click:Connect(function()
-        activeStates[btnData.name] = not activeStates[btnData.name]
-        btn.Text = btnData.name..": "..(activeStates[btnData.name] and "ON" or "OFF")
-        -- Add your feature activation logic here
-    end)
-end
-
--- MINIMIZE ANIMATION ----------------------------------------------------------
-local minimized = false
-minimizeBtn.MouseButton1Click:Connect(function()
-    minimized = not minimized
-    TS:Create(frame, TweenInfo.new(0.3, Enum.EasingStyle.Quad), {
-        Size = minimized and UDim2.new(0, 240, 0, 30) or UDim2.new(0, 240, 0, 220),
-        Position = minimized and UDim2.new(0, frame.Position.X.Offset, 1, -40) or UDim2.new(0, frame.Position.X.Offset, 1, -230)
-    }):Play()
-    minimizeBtn.Text = minimized and "[ + ]" or "[ - ]"
-    
-    -- Toggle button visibility
-    for _, btn in pairs(frame:GetChildren()) do
-        if btn:IsA("TextButton") and btn ~= minimizeBtn then
-            btn.Visible = not minimized
+        -- Flight System
+        if activeStates.Flight then
+            if not root:FindFirstChild("FlightVelocity") then
+                flightVelocity = Instance.new("BodyVelocity", root)
+                flightVelocity.MaxForce = Vector3.new(4000, 4000, 4000)
+                
+                flightGyro = Instance.new("BodyGyro", root)
+                flightGyro.MaxTorque = Vector3.new(4000, 4000, 4000)
+            end
+            
+            local cam = workspace.CurrentCamera.CFrame
+            local moveVec = Vector3.new(
+                UIS:IsKeyDown(Enum.KeyCode.D) and 1 or UIS:IsKeyDown(Enum.KeyCode.A) and -1 or 0,
+                UIS:IsKeyDown(Enum.KeyCode.Space) and 1 or UIS:IsKeyDown(Enum.KeyCode.LeftShift) and -1 or 0,
+                UIS:IsKeyDown(Enum.KeyCode.W) and -1 or UIS:IsKeyDown(Enum.KeyCode.S) and 1 or 0
+            )
+            flightVelocity.Velocity = cam:VectorToWorldSpace(moveVec) * currentValues.Flight
+            flightGyro.CFrame = cam
+        else
+            if flightVelocity then flightVelocity:Destroy() end
+            if flightGyro then flightGyro:Destroy() end
         end
     end
 end)
 
-print("GUI system fully operational!")
+-- [Keep all other GUI elements and systems from previous futuristic design here] --
+
+-- CHARACTER SAFETY SYSTEM -----------------------------------------------------
+player.CharacterAdded:Connect(function(character)
+    character:WaitForChild("Humanoid").Died:Connect(function()
+        activeStates.Flight = false
+        if flightKnob then updateToggle(flightKnob, false) end
+    end)
+end)
+
+print("Cyber systems operational")
