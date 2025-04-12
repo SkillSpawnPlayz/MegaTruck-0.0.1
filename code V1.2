@@ -1,3 +1,5 @@
+
+
 ----- COMPLETE LOCALSCRIPT (StarterPlayerScripts) -----
 local Players = game:GetService("Players")
 local UIS = game:GetService("UserInputService")
@@ -41,7 +43,30 @@ if not OorN then
     label.Font = Enum.Font.GothamBold
     label.TextSize = 20
 
-    return -- Stop script execution here
+    return
+end
+
+-- ========== CHARACTER HANDLER ========== --
+local currentHumanoid
+local function onCharacterAdded(character)
+    local hum = character:WaitForChild("Humanoid")
+    currentHumanoid = hum
+    
+    -- Apply defaults
+    hum.JumpPower = 50
+    hum.WalkSpeed = 16
+    
+    -- Protect jump power changes
+    hum:GetPropertyChangedSignal("JumpPower"):Connect(function()
+        if active.Jump then
+            hum.JumpPower = values.Jump
+        end
+    end)
+end
+
+player.CharacterAdded:Connect(onCharacterAdded)
+if player.Character then
+    onCharacterAdded(player.Character)
 end
 
 -- ========== KEY SYSTEM ========== --
@@ -74,7 +99,6 @@ submitBtn.BackgroundColor3 = Color3.fromRGB(0, 90, 180)
 submitBtn.TextColor3 = Color3.new(1,1,1)
 Instance.new("UICorner", submitBtn).CornerRadius = UDim.new(0, 8)
 
--- Key validation
 submitBtn.MouseButton1Click:Connect(function()
     for _, validKey in pairs(VALID_KEYS) do
         if keyInput.Text == validKey then
@@ -108,7 +132,6 @@ mainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
 mainFrame.BackgroundTransparency = 1
 Instance.new("UICorner", mainFrame).CornerRadius = UDim.new(0, 20)
 
--- Draggable title
 local title = Instance.new("TextLabel", mainFrame)
 title.Size = UDim2.new(1, 0, 0, 60)
 title.Text = "Made by -SkillSpawnPlayz"
@@ -152,7 +175,7 @@ end)
 local active = {Jump = false, Speed = false, Flight = false}
 local values = {Jump = 50, Speed = 16, Flight = 50}
 
--- Ability row template
+-- Ability rows
 local function CreateRow(yPos, label)
     local container = Instance.new("Frame", mainFrame)
     container.Size = UDim2.new(1, -40, 0, 60)
@@ -185,7 +208,6 @@ local function CreateRow(yPos, label)
     return txt, toggle
 end
 
--- Create ability rows
 local jumpTxt, jumpToggle = CreateRow(0.15, "Jump Height:")
 local speedTxt, speedToggle = CreateRow(0.35, "Run Speed:")
 local flightTxt, flightToggle = CreateRow(0.55, "Flight Power:")
@@ -211,6 +233,12 @@ local function ToggleSystem(btn, stateName)
         TS:Create(btn, TweenInfo.new(0.2), {
             BackgroundColor3 = active[stateName] and Color3.fromRGB(0, 170, 0) or Color3.fromRGB(80, 80, 80)
         }):Play()
+        
+        if stateName == "Jump" and currentHumanoid then
+            currentHumanoid.JumpPower = active.Jump and values.Jump or 50
+        elseif stateName == "Speed" and currentHumanoid then
+            currentHumanoid.WalkSpeed = active.Speed and values.Speed or 16
+        end
     end)
 end
 
@@ -218,20 +246,17 @@ ToggleSystem(jumpToggle, "Jump")
 ToggleSystem(speedToggle, "Speed")
 ToggleSystem(flightToggle, "Flight")
 
--- Flight system
-local flightVelocity, flightGyro
+-- ========== MOVEMENT SYSTEMS ========== --
 RS.Heartbeat:Connect(function()
-    local chr = player.Character
-    if not chr then return end
-    local root = chr:FindFirstChild("HumanoidRootPart")
-    local hum = chr:FindFirstChildOfClass("Humanoid")
-    
-    if hum then
-        hum.JumpPower = active.Jump and values.Jump or 50
-        hum.WalkSpeed = active.Speed and values.Speed or 16
+    if currentHumanoid then
+        -- Update jump/walk if not flying
+        currentHumanoid.JumpPower = active.Jump and values.Jump or 50
+        currentHumanoid.WalkSpeed = active.Speed and values.Speed or 16
         
+        -- Flight system
+        local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
         if active.Flight and root then
-            if not flightVelocity then
+            if not flightVelocity or not flightVelocity.Parent then
                 flightVelocity = Instance.new("BodyVelocity", root)
                 flightVelocity.MaxForce = Vector3.new(10000, 10000, 10000)
                 flightGyro = Instance.new("BodyGyro", root)
@@ -248,13 +273,19 @@ RS.Heartbeat:Connect(function()
             flightVelocity.Velocity = cam:VectorToWorldSpace(moveVec) * values.Flight
             flightGyro.CFrame = cam
         else
-            if flightVelocity then flightVelocity:Destroy() end
-            if flightGyro then flightGyro:Destroy() end
+            if flightVelocity then
+                flightVelocity:Destroy()
+                flightVelocity = nil
+            end
+            if flightGyro then
+                flightGyro:Destroy()
+                flightGyro = nil
+            end
         end
     end
 end)
 
--- Teleport system
+-- ========== TELEPORT SYSTEM ========== --
 local tpBox = Instance.new("TextBox", mainFrame)
 tpBox.Size = UDim2.new(0.6, 0, 0, 30)
 tpBox.Position = UDim2.new(0.05, 0, 0.8, 0)
@@ -278,7 +309,7 @@ tpBtn.MouseButton1Click:Connect(function()
     end
 end)
 
--- ========== ANIMATIONS ========== --
+-- ========== GUI ANIMATIONS ========== --
 local function WoahOpen()
     mainFrame.Visible = true
     TS:Create(mainFrame, TweenInfo.new(0.8, Enum.EasingStyle.Elastic), {
