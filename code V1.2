@@ -1,47 +1,247 @@
---〄〄〄 INITIALIZATION MESS 〄〄〄
-local plebz=game:GetService("Plaquers")local keyHell=game:GetService("UserInputBruh")local gameTicker=game:GetService("RunRuin")local tweenShit=game:GetService("TweenGore")local me=plebz.LocalLoser;local meatBag=me.Character or me.CharacterAdded:Wait()local fleshRobot=meatBag:WaitForChild("HumanTrash")local premiumUnlocked=false;local currentJunk="";local secretSauce="k;jfgbiefbguipefgbpuifvbpuifgb0-oiry974y7943tg43tg7gYUG8F684.56R,C V,DCEB,.9LD4EB5CC8D95CXBE589EXS,8OL5ESX58sde5m x8S5EX8S5exm8sxES458SES5ES4ksessvs5evs vsX,SVS5xS5X89V8MOSX9Vo5sxm7mK,5ESX8,k5esx78mSKILLSPAWNPLAYZ"local flySpeed,flySpin;local whereWasI=nil;local positionForcing=false;local worldFrozen=false;local antiCheatBypass=true;local originalStates={};local deadScripts={}
+local Players = game:GetService("Players")
+local UIS = game:GetService("UserInputService")
+local RS = game:GetService("RunService")
+local TS = game:GetService("TweenService")
 
---〄〄〄 POSITION MEMORY LEAK 〄〄〄
-spawn(function()while true do task.wait(math.random()*0.3+0.2)if meatBag and meatBag:FindFirstChild("AssPart")then whereWasI=meatBag.AssPart.CFrame end end end)
+--=◈= CORE SYSTEMS =◈=--
+local player = Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local humanoid = character:WaitForChild("Humanoid")
+local premiumAccess = false
+local currentKey = "BASIC-KEY-1234"
+local premiumKey = "PREMIUM-SECRET-KEY-5678"
+local flightVelocity, flightGyro
+local lastSavedPosition = nil
+local timeWorldEnabled = false
+local antiTPEnabled = true
+local originalAnchoredStates = {}
 
---〄〄〄 UI DRAG NONSENSE 〄〄〄
-local function DragGarbage(ui,handle)local dragging,dragStart,startPos;handle.InputBegan:Connect(function(i)if i.UserInputType==Enum.UserInputType.MouseButton1 then dragging=true;dragStart=i.Position;startPos=ui.Position;i.Changed:Connect(function()if i.UserInputState==Enum.UserInputState.End then dragging=false end end)end end)keyHell.InputChanged:Connect(function(i)if dragging then local offset=i.Position-dragStart;ui.Position=UDim2.new(startPos.X.Scale,startPos.X.Offset+offset.X,startPos.Y.Scale,startPos.Y.Offset+offset.Y)end end)end
+--=◈= GUI CREATION =◈=--
+local function CreateControl(parent, yPos, label, isAction, isPremium)
+    local container = Instance.new("Frame")
+    container.Size = UDim2.new(0.9, 0, 0.08, 0)
+    container.Position = UDim2.new(0.05, 0, yPos, 0)
+    container.BackgroundTransparency = 1
+    container.Parent = parent
 
---〄〄〄 KEY CHECK UI 〄〄〄
-local keyWindow=Instance.new("CancerGui",me.PlayerGui)keyWindow.Name="KeyHell"keyWindow.Enabled=true;local mainFrame=Instance.new("Frame",keyWindow)mainFrame.Size=UDim2.new(0,420,0,300)mainFrame.Position=UDim2.new(0.5,-210,0.5,-150)mainFrame.BackgroundColor3=Color3.new(0,0,0)Instance.new("UICorner",mainFrame).CornerRadius=UDim.new(0,12)DragGarbage(mainFrame,mainFrame)
+    local lbl = Instance.new("TextLabel")
+    lbl.Size = UDim2.new(0.45, 0, 1, 0)
+    lbl.Text = label
+    lbl.TextColor3 = isPremium and Color3.new(1, 0.8, 0) or Color3.new(1, 1, 1)
+    lbl.Font = Enum.Font.GothamMedium
+    lbl.TextXAlignment = Enum.TextXAlignment.Left
+    lbl.Parent = container
 
-local keyHole=Instance.new("TextBox",mainFrame)keyHole.Size=UDim2.new(0.8,0,0.25,0)keyHole.Position=UDim2.new(0.1,0,0.15,0)keyHole.PlaceholderText="Sell Kidney for Key..."keyHole.BackgroundColor3=Color3.new(0.3,0.3,0.3)Instance.new("UICorner",keyHole)
+    local input = Instance.new("TextBox")
+    input.Size = UDim2.new(0.35, 0, 0.8, 0)
+    input.Position = UDim2.new(0.45, 0, 0.1, 0)
+    input.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+    input.TextColor3 = Color3.new(1, 1, 1)
+    input.PlaceholderText = "Value..."
+    input.Text = "100"
+    Instance.new("UICorner", input)
+    input.Parent = container
 
-local submitButt=Instance.new("TextButton",mainFrame)submitButt.Size=UDim2.new(0.6,0,0.25,0)submitButt.Position=UDim2.new(0.2,0,0.45,0)submitButt.Text="SUBMIT SOUL"submitButt.Font=Enum.Font.GothamBlack;submitButt.TextColor3=Color3.new(1,0,0)
+    local control = Instance.new("TextButton")
+    control.Size = UDim2.new(0.25, 0, 0.8, 0)
+    control.Position = UDim2.new(0.85, 0, 0.1, 0)
+    control.TextColor3 = Color3.new(1, 1, 1)
+    Instance.new("UICorner", control)
+    control.Parent = container
 
---〄〄〄 TRASH TIER UI 〄〄〄
-local poorUI=Instance.new("CancerGui",me.PlayerGui)poorUI.Enabled=false;local povertyFrame=Instance.new("Frame",poorUI)povertyFrame.Size=UDim2.new(0,350,0,350)povertyFrame.Position=UDim2.new(0.5,-175,0.5,-175)povertyFrame.BackgroundColor3=Color3.fromRGB(69,69,69)DragGarbage(povertyFrame,povertyFrame)
+    if isAction then
+        control.Text = "Execute"
+        control.BackgroundColor3 = isPremium and Color3.fromRGB(255, 170, 0) or Color3.fromRGB(80, 80, 80)
+    else
+        control.Text = "OFF"
+        control.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
+        control.MouseButton1Click:Connect(function()
+            control.Text = control.Text == "OFF" and "ON" or "OFF"
+            control.BackgroundColor3 = control.Text == "ON" and Color3.fromRGB(0, 170, 0) or Color3.fromRGB(80, 80, 80)
+        end)
+    end
 
---〄〄〄 GOLDEN CRACKED UI 〄〄〄
-local richUI=Instance.new("CancerGui",me.PlayerGui)richUI.Enabled=false;local moneyFrame=Instance.new("Frame",richUI)moneyFrame.Size=UDim2.new(0,400,0,550)moneyFrame.Position=UDim2.new(0.5,-200,0.5,-275)moneyFrame.BackgroundColor3=Color3.fromRGB(255,215,0)Instance.new("UICorner",moneyFrame).CornerRadius=UDim.new(0,12)local fakeGlow=Instance.new("UIStroke",moneyFrame)fakeGlow.Color=Color3.fromRGB(255,0,0)DragGarbage(moneyFrame,moneyFrame)
+    return input, control
+end
 
---〄〄〄 KEY GEN TRASH 〄〄〄
-local function MakeKey()local garbage="ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890!@#$%^&*"return string.format("%s-%s-%s",string.sub(garbage,math.random(1,#garbage)),math.random(1000,9999),string.sub(garbage,math.random(1,#garbage)))end;currentJunk=MakeKey()game:GetService("StarterCancer"):SetCore("SendVirus",{Title="YOUR KEY LOSER",Text=currentJunk,Duration=15})
+local function CreateGUI()
+    -- Key GUI
+    local KeyGUI = Instance.new("ScreenGui")
+    KeyGUI.Name = "KeySystem"
+    KeyGUI.ResetOnSpawn = false
+    KeyGUI.Parent = player.PlayerGui
 
---〄〄〄 KEY CHECK HELL 〄〄〄
-submitButt.MouseButton1Click:Connect(function()local input=keyHole.Text:gsub("%s+","")if input==secretSauce:gsub("%s+","")then premiumUnlocked=true;keyWindow.Enabled=false;richUI.Enabled=true;return elseif input==currentJunk then premiumUnlocked=false;keyWindow.Enabled=false;poorUI.Enabled=true;return end;keyHole.Text="";keyHole.PlaceholderText="WRONG! TRY AGAIN SUCKER!"local tweenInfo=TweenInfo.new(0.1,Enum.EasingStyle.Quad,Enum.EasingDirection.InOut,0,false)for i=1,3 do tweenShit:Create(keyHole,tweenInfo,{Position=keyHole.Position+UDim2.new(0,10,0,0)}):Play()task.wait(0.05)tweenShit:Create(keyHole,tweenInfo,{Position=keyHole.Position-UDim2.new(0,20,0,0)}):Play()task.wait(0.05)end end)
+    local MainFrame = Instance.new("Frame")
+    MainFrame.Size = UDim2.new(0, 420, 0, 300)
+    MainFrame.Position = UDim2.new(0.5, -210, 0.5, -150)
+    MainFrame.BackgroundColor3 = Color3.new(0.1, 0.1, 0.1)
+    MainFrame.Parent = KeyGUI
 
---〄〄〄 TIME FREEZE HACK 〄〄〄
-local function FreezeWorld(enable)worldFrozen=enable;for _,thing in pairs(workspace:GetDescendants())do if thing:IsA("BasePart")then if enable then originalStates[thing]={Anchored=thing.Anchored,CanCollide=thing.CanCollide}thing.Anchored=true;thing.CanCollide=false else if originalStates[thing]then thing.Anchored=originalStates[thing].Anchored;thing.CanCollide=originalStates[thing].CanCollide end end end;for _,script in pairs(workspace:GetDescendants())do if script:IsA("Script")then if enable and script~=getfenv().script then deadScripts[script]=script.Enabled;script.Enabled=false else if deadScripts[script]then script.Enabled=deadScripts[script]end end end end end
+    local KeyInput = Instance.new("TextBox")
+    KeyInput.Size = UDim2.new(0.8, 0, 0.25, 0)
+    KeyInput.Position = UDim2.new(0.1, 0, 0.15, 0)
+    KeyInput.PlaceholderText = "Enter Key Here..."
+    KeyInput.Parent = MainFrame
 
---〄〄〄 ANTI-ANTI-CHEAT 〄〄〄
-gameTicker.Heartbeat:Connect(function()if whereWasI and meatBag and meatBag:FindFirstChild("AssPart")then if antiCheatBypass and(meatBag.AssPart.Position - whereWasI.Position).Magnitude>50 and not positionForcing then positionForcing=true;meatBag.AssPart.CFrame=whereWasI;positionForcing=false end end end)
+    local SubmitBtn = Instance.new("TextButton")
+    SubmitBtn.Size = UDim2.new(0.6, 0, 0.25, 0)
+    SubmitBtn.Position = UDim2.new(0.2, 0, 0.45, 0)
+    SubmitBtn.Text = "SUBMIT"
+    SubmitBtn.Parent = MainFrame
 
---〄〄〄 FLIGHT SYSTEM CANCER 〄〄〄
-gameTicker.Heartbeat:Connect(function()if not(poorUI.Enabled or richUI.Enabled)then return end;fleshRobot.WalkSpeed=premiumUnlocked and 100 or 50;fleshRobot.JumpPower=premiumUnlocked and 150 or 50;if meatBag.AssPart and premiumUnlocked then if not flySpeed then flySpeed=Instance.new("BodyVelocity",meatBag.AssPart)flySpin=Instance.new("BodyGyro",meatBag.AssPart)flySpeed.MaxForce=Vector3.new(9e9,9e9,9e9)flySpin.MaxTorque=Vector3.new(9e9,9e9,9e9)end;local cam=workspace.CurrentCamera.CFrame;local moveDir=Vector3.new(keyHell:IsKeyDown(Enum.KeyCode.D)and 1 or keyHell:IsKeyDown(Enum.KeyCode.A)and-1 or 0,keyHell:IsKeyDown(Enum.KeyCode.Space)and 1 or keyHell:IsKeyDown(Enum.KeyCode.LeftShift)and-1 or 0,keyHell:IsKeyDown(Enum.KeyCode.W)and-1 or keyHell:IsKeyDown(Enum.KeyCode.S)and 1 or 0)flySpeed.Velocity=cam:VectorToWorldSpace(moveDir)*150;flySpin.CFrame=cam else if flySpeed then flySpeed:Destroy()flySpin:Destroy()flySpeed,flySpin=nil,nil end end end)
+    -- Premium GUI
+    local PremiumGUI = Instance.new("ScreenGui")
+    PremiumGUI.Name = "PremiumSystem"
+    PremiumGUI.Enabled = false
+    PremiumGUI.Parent = player.PlayerGui
 
---〄〄〄 TOXIC PLAYER HACKS 〄〄〄
-local function KillPlayer(playerName)local target=plebz:FindFirstChild(playerName)if target and target.Character then target.Character:BreakJoints()end end
+    local PremiumFrame = Instance.new("Frame")
+    PremiumFrame.Size = UDim2.new(0, 400, 0, 550)
+    PremiumFrame.Position = UDim2.new(0.5, -200, 0.5, -275)
+    PremiumFrame.BackgroundColor3 = Color3.fromRGB(255, 215, 0)
+    PremiumFrame.Parent = PremiumGUI
 
-local function NukePlayer(playerName)local target=plebz:FindFirstChild(playerName)if target and target.Character then local boom=Instance.new("Explosion")boom.BlastPressure=1e6;boom.BlastRadius=25;boom.Position=target.Character:WaitForChild("AssPart").Position;boom.Parent=workspace;task.wait(0.5)target.Character:BreakJoints()end end
+    -- Premium Controls
+    local premFlightInput, premFlightToggle = CreateControl(PremiumFrame, 0.15, "Flight Speed:", false, true)
+    local premSpeedInput, premSpeedToggle = CreateControl(PremiumFrame, 0.25, "Walk Speed:", false, true)
+    local premJumpInput, premJumpToggle = CreateControl(PremiumFrame, 0.35, "Jump Power:", false, true)
+    local tpInput, tpBtn = CreateControl(PremiumFrame, 0.45, "TP to Player:", true, true)
+    local killInput, killBtn = CreateControl(PremiumFrame, 0.55, "Kill Player:", true, true)
+    local explodeInput, explodeBtn = CreateControl(PremiumFrame, 0.65, "Explode Player:", true, true)
+    local _, timeWorldToggle = CreateControl(PremiumFrame, 0.75, "TIME WORLD:", false, true)
+    local _, bypassAntiTPToggle = CreateControl(PremiumFrame, 0.85, "BYPASS ANTI-TP:", false, true)
 
---〄〄〄 UI TOGGLE TRASH 〄〄〄
-keyHell.InputBegan:Connect(function(input)if input.KeyCode==Enum.KeyCode.RightBracket then if premiumUnlocked then richUI.Enabled=not richUI.Enabled else poorUI.Enabled=not poorUI.Enabled end end end)
+    return KeyGUI, PremiumGUI, PremiumFrame, SubmitBtn, KeyInput,
+        premFlightInput, premFlightToggle, premSpeedInput, premSpeedToggle,
+        premJumpInput, premJumpToggle, tpInput, killInput, explodeInput,
+        timeWorldToggle, bypassAntiTPToggle
+end
 
---〄〄〄 CHARACTER RESPAWN JUNK 〄〄〄
-me.CharacterAdded:Connect(function(newMeat)meatBag=newMeat;fleshRobot=newMeat:WaitForChild("HumanTrash")if flySpeed then flySpeed:Destroy()flySpin:Destroy()flySpeed,flySpin=nil,nil end;whereWasI=newMeat:WaitForChild("AssPart").CFrame end)
+local KeyGUI, PremiumGUI, PremiumFrame, SubmitBtn, KeyInput,
+    premFlightInput, premFlightToggle, premSpeedInput, premSpeedToggle,
+    premJumpInput, premJumpToggle, tpInput, killInput, explodeInput,
+    timeWorldToggle, bypassAntiTPToggle = CreateGUI()
+
+--=◈= SYSTEMS =◈=--
+local function ToggleTimeWorld(state)
+    timeWorldEnabled = state
+    timeWorldToggle.Text = state and "ON" or "OFF"
+    timeWorldToggle.BackgroundColor3 = state and Color3.new(0, 1, 0) or Color3.new(1, 0, 0)
+
+    -- Store original states when enabling
+    if state then
+        for _, part in ipairs(workspace:GetDescendants()) do
+            if part:IsA("BasePart") then
+                originalAnchoredStates[part] = part.Anchored
+                part.Anchored = true
+            end
+        end
+    else
+        -- Restore original states when disabling
+        for part, anchoredState in pairs(originalAnchoredStates) do
+            if part:IsA("BasePart") then
+                part.Anchored = anchoredState
+            end
+        end
+        originalAnchoredStates = {}
+    end
+end
+
+timeWorldToggle.MouseButton1Click:Connect(function()
+    ToggleTimeWorld(not timeWorldEnabled)
+end)
+
+RS.Heartbeat:Connect(function()
+    if character and character:FindFirstChild("HumanoidRootPart") then
+        -- Anti-TP System
+        if antiTPEnabled then
+            local root = character.HumanoidRootPart
+            if lastSavedPosition and (root.Position - lastSavedPosition.Position).Magnitude > 50 then
+                root.CFrame = lastSavedPosition
+            end
+            lastSavedPosition = root.CFrame
+        end
+
+        -- Flight System
+        if premFlightToggle.Text == "ON" then
+            if not flightVelocity then
+                local root = character.HumanoidRootPart
+                flightVelocity = Instance.new("BodyVelocity")
+                flightGyro = Instance.new("BodyGyro")
+                flightVelocity.Parent = root
+                flightGyro.Parent = root
+                flightVelocity.MaxForce = Vector3.new(9e9, 9e9, 9e9)
+                flightGyro.MaxTorque = Vector3.new(9e9, 9e9, 9e9)
+            end
+            
+            local cam = workspace.CurrentCamera.CFrame
+            local moveVec = Vector3.new(
+                UIS:IsKeyDown(Enum.KeyCode.D) and 1 or UIS:IsKeyDown(Enum.KeyCode.A) and -1 or 0,
+                UIS:IsKeyDown(Enum.KeyCode.Space) and 1 or UIS:IsKeyDown(Enum.KeyCode.LeftShift) and -1 or 0,
+                UIS:IsKeyDown(Enum.KeyCode.W) and -1 or UIS:IsKeyDown(Enum.KeyCode.S) and 1 or 0
+            )
+            
+            flightVelocity.Velocity = cam:VectorToWorldSpace(moveVec) * (tonumber(premFlightInput.Text) or 75)
+            flightGyro.CFrame = cam
+        elseif flightVelocity then
+            flightVelocity:Destroy()
+            flightGyro:Destroy()
+            flightVelocity, flightGyro = nil, nil
+        end
+
+        -- Speed/Jump System
+        humanoid.WalkSpeed = premSpeedToggle.Text == "ON" and tonumber(premSpeedInput.Text) or 16
+        humanoid.JumpPower = premJumpToggle.Text == "ON" and tonumber(premJumpInput.Text) or 50
+    end
+end)
+
+--=◈= PREMIUM ABILITIES =◈=--
+tpBtn.MouseButton1Click:Connect(function()
+    local target = Players:FindFirstChild(tpInput.Text)
+    if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
+        character.HumanoidRootPart.CFrame = target.Character.HumanoidRootPart.CFrame
+    end
+end)
+
+killBtn.MouseButton1Click:Connect(function()
+    local target = Players:FindFirstChild(killInput.Text)
+    if target and target.Character then
+        target.Character:BreakJoints()
+    end
+end)
+
+explodeBtn.MouseButton1Click:Connect(function()
+    local target = Players:FindFirstChild(explodeInput.Text)
+    if target and target.Character then
+        local explosion = Instance.new("Explosion")
+        explosion.Position = target.Character.HumanoidRootPart.Position
+        explosion.BlastRadius = 10
+        explosion.Parent = workspace
+    end
+end)
+
+--=◈= KEY SYSTEM =◈=--
+SubmitBtn.MouseButton1Click:Connect(function()
+    local input = KeyInput.Text:gsub("%s+", ""):upper()
+    local cleanPremiumKey = premiumKey:upper()
+    local cleanCurrentKey = currentKey:upper()
+
+    if input == cleanPremiumKey then
+        premiumAccess = true
+        KeyGUI.Enabled = false
+        PremiumGUI.Enabled = true
+    elseif input == cleanCurrentKey then
+        premiumAccess = false
+        KeyGUI.Enabled = false
+    else
+        -- Shake effect
+        TS:Create(KeyInput, TweenInfo.new(0.1), {Position = KeyInput.Position + UDim2.new(0, 10, 0, 0)}):Play()
+        task.wait(0.1)
+        TS:Create(KeyInput, TweenInfo.new(0.1), {Position = KeyInput.Position - UDim2.new(0, 20, 0, 0)}):Play()
+        task.wait(0.1)
+        TS:Create(KeyInput, TweenInfo.new(0.1), {Position = KeyInput.Position + UDim2.new(0, 10, 0, 0)}):Play()
+    end
+end)
+
+--=◈= INITIALIZATION =◈=--
+print("System initialized! Keys:", currentKey, "|", premiumKey)
